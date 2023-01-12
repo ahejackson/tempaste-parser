@@ -5,11 +5,62 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TemPaste Parser</title>
+  <link rel="stylesheet" href="demo/style.css">
 </head>
 
 <body>
-  <div id="app"></div>
-  <script type="module" src="/src/main.ts"></script>
+  <header>
+    <h1>TemPaste Parsing Demo</h1>
+  </header>
+
+  <div class="input">
+    <div class="panel">
+      <h2>Input</h2>
+      <textarea class="demo-textarea">
+    </textarea>
+    </div>
+  </div>
+
+  <div class="output">
+    <div class="panel">
+      <h2>Parsed Output</h2>
+      <pre class="demo-output"></pre>
+    </div>
+  </div>
+
+  <footer>
+    <a href="https://github.com/ahejackson/tempaste-parser" target="_blank" rel="noopener noreferrer">
+      View on GitHub
+    </a>
+  </footer>
+
+  <script type="module">
+    import { parsePaste } from './src'
+
+    const textarea = document.querySelector(".demo-textarea");
+    const output = document.querySelector(".demo-output");
+
+    const demoText =
+      `Pigepic @ Fat Burner
+Trait: Fainted Curse
+Level: 100
+TVs: 499 HP / 497 SPD / 3 DEF
+- Bamboozle
+- Divine Inspiration
+- Wind Burst
+- Stone Wall
+`;
+
+    textarea.value = demoText;
+    output.innerText = JSON.stringify(parsePaste(textarea.value), null, 2);
+
+    textarea.addEventListener("input", () => {
+      output.innerText = JSON.stringify(parsePaste(textarea.value), null, 2);
+    });
+
+
+
+  </script>
 </body>
 
 </html>

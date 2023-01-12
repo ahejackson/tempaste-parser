@@ -2,7 +2,7 @@ import { RE_HEAD, RE_TECH, RE_STAT } from "./regexps";
 import type { ParsedTem, ParsedTemStats } from "./types";
 
 // Parse a string into an array of Temtem sets
-export function parseTeam(paste: string): ParsedTem[] {
+export function parsePaste(paste: string): ParsedTem[] {
   // Split the paste into different tems
   // Sperated by a double newline, allowing for windows/linux line terminators
   let tems = paste.split(/(?:\r?\n){2,}/);
@@ -67,12 +67,12 @@ export function parseTem(set: string): ParsedTem | null {
       } else if (attribute[0] === "Level") {
         tem.level = parseInt(attribute[1]);
       } else if (attribute[0] === "TVs") {
-        let tvs = parseStats(attribute[1].trim());
+        let tvs = parseTemStats(attribute[1].trim());
         if (tvs != null) {
           tem.tvs = tvs;
         }
       } else if (attribute[0] === "SVs") {
-        let svs = parseStats(attribute[1].trim());
+        let svs = parseTemStats(attribute[1].trim());
         if (svs != null) {
           tem.svs = svs;
         }
@@ -136,7 +136,7 @@ export function parseTemHeader(headerString: string): ParsedTem | null {
   return tem;
 }
 
-export function parseStats(statstr: string): ParsedTemStats | null {
+export function parseTemStats(statstr: string): ParsedTemStats | null {
   let m = statstr.match(RE_STAT);
 
   if (m === null) return null;

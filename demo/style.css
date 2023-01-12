@@ -1,0 +1,131 @@
+:root {
+  --gray-0: #f8f9fa;
+  --gray-1: #f1f3f5;
+  --gray-2: #e9ecef;
+  --gray-3: #dee2e6;
+  --gray-7: #495057;
+  --gray-8: #343a40;
+  --gray-9: #212529;
+  --gray-10: #16191d;
+
+  --surface-1: var(--gray-10);
+  --surface-2: var(--gray-9);
+  --text: var(--gray-1);
+  --accent-1: #7965a0;
+  --accent-2: #8876ab;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --surface-1: var(--gray-2);
+    --surface-2: var(--gray-3);
+    --text: var(--gray-9);
+  }
+}
+
+html {
+  box-sizing: border-box;
+  line-height: 1.5;
+
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: var(--text);
+  background-color: var(--surface-1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  font-weight: 500;
+  text-decoration: inherit;
+  color: var(--accent-2);
+}
+
+a:hover {
+  color: var(--accent-1);
+}
+
+h1 {
+  font-size: 2.4rem;
+  line-height: 1.1;
+  color: var(--accent-1);
+}
+
+body {
+  min-height: 100vh;
+
+  /* grid container settings */
+  display: grid;
+  grid-template-columns: clamp(1rem, 5vw, 10rem) 1fr 1fr clamp(1rem, 5vw, 10rem);
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    ". header header ."
+    ". input output ."
+    "footer footer footer footer";
+  gap: 2em;
+}
+
+header {
+  grid-area: header;
+  padding-top: 1rem;
+}
+
+footer {
+  grid-area: footer;
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.input {
+  grid-area: input;
+}
+
+.output {
+  grid-area: output;
+}
+
+.panel {
+  padding: 1rem;
+  background-color: var(--surface-2);
+  border-radius: 0.5rem;
+}
+
+.panel h2 {
+  margin-bottom: 1rem;
+  color: var(--accent-1);
+}
+
+.demo-textarea {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1rem;
+  padding: 1rem;
+  width: 100%;
+  min-height: 60vh;
+  resize: vertical;
+  background-color: var(--surface-1);
+  border-radius: 0.25rem;
+  border: none;
+}
+
+.demo-output {
+  min-width: 50%;
+  padding: 1em;
+  max-height: 70vh;
+  overflow-y: scroll;
+  background-color: var(--surface-1);
+  border-radius: 0.25rem;
+}
