@@ -8,6 +8,7 @@ export type ParsedTem = {
   level?: number;
   tvs?: ParsedTemStats;
   svs?: ParsedTemStats;
+  attrs?: { [key: string]: string };
   techniques?: string[];
   notes?: string[];
 };
