@@ -1,6 +1,17 @@
 import { RE_HEAD, RE_TECH, RE_STAT } from "./regexps";
 import type { ParsedTem, ParsedTemStats } from "./types";
 
+const MAX_TECHNIQUES = 4;
+
+const STATE = {
+  HEADER: "HEADER",
+  ATTRIBUTES: "ATTRIBUTES",
+  TECHNIQUES: "TECHNIQUES",
+  NOTES: "NOTES",
+} as const;
+
+type State = typeof STATE[keyof typeof STATE];
+
 // Parse a string into an array of Temtem sets
 export function parsePaste(paste: string): ParsedTem[] {
   // Split the paste into different tems
@@ -34,6 +45,8 @@ export function parseTem(set: string): ParsedTem | null {
   const lines = set.split(/\r?\n/);
 
   // 1. Parse the header
+  let state: State = STATE.HEADER;
+
   const tem = parseTemHeader(lines[0]);
 
   // if the header was invalid, return these lines as a set of notes
@@ -46,45 +59,28 @@ export function parseTem(set: string): ParsedTem | null {
   const techniques: string[] = [];
   const notes: string[] = [];
 
-  let m: RegExpMatchArray | null;
+  // 2. Loop the the remaining lines to parse the other blocks
+  state = STATE.ATTRIBUTES;
 
-  // 2. Loop through the other lines to parse the body
   for (let i = 1; i < lines.length; i++) {
-    // 3. Check if the line matches a technique
-    if ((m = lines[i].match(RE_TECH)) !== null) {
-      techniques.push(sanitize(m[2]));
-      continue;
+    if (state == STATE.ATTRIBUTES) {
+      if (!parseTemAttributes(lines[i], tem)) {
+        // if its not an attribute switch to the TECHNIQUES state
+        state = STATE.TECHNIQUES;
+      }
     }
 
-    // 4. Check if the line matches another attribute
-    let attribute = lines[i].split(": ");
+    if (state == STATE.TECHNIQUES) {
+      if (!parseTemTechnique(lines[i], techniques)) {
+        // if its not a technique switch to the NOTES state
+        state = STATE.NOTES;
+      }
+    }
 
-    if (attribute.length === 2) {
-      if (attribute[0] === "Trait") {
-        tem.trait = sanitize(attribute[1].trim());
-      } else if (attribute[0] === "Luma") {
-        tem.luma = attribute[1].trim() === "Yes";
-      } else if (attribute[0] === "Level") {
-        tem.level = parseInt(attribute[1]);
-      } else if (attribute[0] === "TVs") {
-        let tvs = parseTemStats(attribute[1].trim());
-        if (tvs != null) {
-          tem.tvs = tvs;
-        }
-      } else if (attribute[0] === "SVs") {
-        let svs = parseTemStats(attribute[1].trim());
-        if (svs != null) {
-          tem.svs = svs;
-        }
-      } else {
+    if (state == STATE.NOTES) {
+      if (lines[i].length > 0) {
         notes.push(sanitize(lines[i]));
       }
-      continue;
-    }
-
-    // 5. Otherwise it's not a recognised type of line
-    if (lines[i].length > 0) {
-      notes.push(sanitize(lines[i]));
     }
   }
 
@@ -136,8 +132,8 @@ export function parseTemHeader(headerString: string): ParsedTem | null {
   return tem;
 }
 
-export function parseTemStats(statstr: string): ParsedTemStats | null {
-  let m = statstr.match(RE_STAT);
+export function parseTemStats(str: string): ParsedTemStats | null {
+  let m = str.match(RE_STAT);
 
   if (m === null) return null;
 
@@ -166,4 +162,55 @@ export function parseTemStats(statstr: string): ParsedTemStats | null {
   }
 
   return stats;
+}
+
+function parseTemAttributes(line: string, tem: ParsedTem): boolean {
+  let attribute = line.split(": ");
+
+  if (attribute.length !== 2) return false;
+
+  const key = attribute[0].trim();
+  const value = attribute[1].trim();
+
+  switch (key) {
+    case "Trait":
+      tem.trait = sanitize(value);
+      break;
+    case "Luma":
+      tem.luma = value === "Yes";
+      break;
+    case "Level":
+      tem.level = parseInt(value);
+      break;
+    case "TVs":
+      let tvs = parseTemStats(value);
+      if (tvs != null) {
+        tem.tvs = tvs;
+      }
+      break;
+    case "SVs":
+      let svs = parseTemStats(attribute[1].trim());
+      if (svs != null) {
+        tem.svs = svs;
+      }
+      break;
+    default:
+      // Add to the attributes map
+      if (!tem.attrs) {
+        tem.attrs = {};
+      }
+      tem.attrs[key] = sanitize(value);
+  }
+  return true;
+}
+
+function parseTemTechnique(line: string, techniques: string[]): boolean {
+  if (techniques.length >= MAX_TECHNIQUES) return false;
+
+  const m = line.match(RE_TECH);
+
+  if (m === null) return false;
+
+  techniques.push(sanitize(m[2]));
+  return true;
 }

@@ -60,7 +60,7 @@ describe("parseTem", () => {
   it("Parses unknown attributes into the attrs array", () => {
     expect(parseTem(testArbitraryAttr)?.attrs).toMatchInlineSnapshot(`
       {
-        "Arbitrary": "Value"
+        "Arbitrary": "Value",
       }
     `);
   });
