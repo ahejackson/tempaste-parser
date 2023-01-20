@@ -9,8 +9,13 @@ export type ParsedTem = {
   tvs?: ParsedTemStats;
   svs?: ParsedTemStats;
   attrs?: { [key: string]: string };
-  techniques?: string[];
+  techniques?: ParsedTemTechnique[];
   notes?: string[];
+};
+
+export type ParsedTemTechnique = {
+  main: string;
+  alternatives?: string[];
 };
 
 export type ParsedTemStats = {

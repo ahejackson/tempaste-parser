@@ -1,10 +1,13 @@
 import {
   parsePaste,
   parseTem,
+  parseTemAttributes,
   parseTemHeader,
   parseTemStats,
+  parseTemTechnique,
 } from "./tempaste";
 import { describe, expect, it } from "vitest";
+import { ParsedTem, ParsedTemTechnique } from "./types";
 
 describe("parsePaste", () => {
   it("Handles both windows and unix newlines", () => {
@@ -18,75 +21,51 @@ const testFullExample = `Gros Porc (Pigepic) (F) @ Fat Burner
 Trait: Fainted Curse
 Luma: Yes
 Level: 100
-SVs: 50 HP / 50 STA / 50 SPD / 50 ATK / 50 DEF / 50 SPATK / 50 SPDEF
+SVs: 41 HP / 42 STA / 43 SPD / 44 ATK / 45 DEF / 46 SPATK / 47 SPDEF
 TVs: 499 HP / 497 SPD / 3 DEF
 - Bamboozle
 - Divine Inspiration
-- Wind Burst
-- Stone Wall
+- Wind Burst / Chain Heal
+- Stone Wall 
 A full example Pigepic set.
 With two lines of notes.`;
 
-const testTechniqueLimit = `Pigepic
-- Tecnique A
-- Tecnique B
-- Tecnique C
-- Tecnique D
-- Tecnique E`;
-
-const testArbitraryAttr = `Pigepic
-Arbitrary: Value`;
-
-const testUnicodeTechNames = `Pigepic
-- Quetza-leño`;
+const testTechniquesBlock = `Pigepic
+- Technique One
+Invalid: Attribute`;
 
 const testNotesBlock = `Pigepic
 This set is all notes
-And more notes`;
-
-const testTecniquesBlockStart = `Pigepic
-- Move A
-Invalid: Attribute`;
+- Invalid Technique`;
 
 describe("parseTem", () => {
   it("Parses an empty string as null", () => {
     expect(parseTem("")).toBeNull();
   });
 
-  it("Accepts no more than 4 moves", () => {
-    expect(parseTem(testTechniqueLimit)?.techniques?.length).toEqual(4);
-  });
-
-  it("Parses unknown attributes into the attrs array", () => {
-    expect(parseTem(testArbitraryAttr)?.attrs).toMatchInlineSnapshot(`
-      {
-        "Arbitrary": "Value",
-      }
-    `);
-  });
-
-  it("Allows unicode characters in move names", () => {
-    expect(parseTem(testUnicodeTechNames)?.techniques).toEqual(["Quetza-leño"]);
-  });
-
-  it("Recognises notes blocks", () => {
-    expect(parseTem(testNotesBlock)?.notes).toMatchInlineSnapshot(`
-      [
-        "This set is all notes",
-        "And more notes",
-      ]
-    `);
-  });
-
-  it("Doesn't recognise attributes after the techniques block has begun", () => {
-    expect(parseTem(testTecniquesBlockStart)).toMatchInlineSnapshot(`
+  it("Doesn't parse attributes after the techniques block has begun", () => {
+    expect(parseTem(testTechniquesBlock)).toMatchInlineSnapshot(`
       {
         "name": "Pigepic",
         "notes": [
           "Invalid: Attribute",
         ],
         "techniques": [
-          "Move A",
+          {
+            "main": "Technique One",
+          },
+        ],
+      }
+    `);
+  });
+
+  it("Doesn't parse techniques after the notes block has begun", () => {
+    expect(parseTem(testNotesBlock)).toMatchInlineSnapshot(`
+      {
+        "name": "Pigepic",
+        "notes": [
+          "This set is all notes",
+          "- Invalid Technique",
         ],
       }
     `);
@@ -106,19 +85,30 @@ describe("parseTem", () => {
           "With two lines of notes.",
         ],
         "svs": {
-          "atk": 50,
-          "def": 50,
-          "hp": 50,
-          "spatk": 50,
-          "spdef": 50,
-          "spe": 50,
-          "sta": 50,
+          "atk": 44,
+          "def": 45,
+          "hp": 41,
+          "spatk": 46,
+          "spdef": 47,
+          "spe": 43,
+          "sta": 42,
         },
         "techniques": [
-          "Bamboozle",
-          "Divine Inspiration",
-          "Wind Burst",
-          "Stone Wall",
+          {
+            "main": "Bamboozle",
+          },
+          {
+            "main": "Divine Inspiration",
+          },
+          {
+            "alternatives": [
+              "Chain Heal",
+            ],
+            "main": "Wind Burst",
+          },
+          {
+            "main": "Stone Wall",
+          },
         ],
         "trait": "Fainted Curse",
         "tvs": {
@@ -234,5 +224,61 @@ describe("parseTemStats", () => {
 
   it("Returns null when there is no match", () => {
     expect(parseTemStats("Invalid")).toBeNull();
+  });
+});
+
+describe("parseTemAttributes", () => {
+  it("Returns false if there is no attribute", () => {
+    expect(parseTemAttributes("Not an attribute", {})).toEqual(false);
+  });
+
+  it("Parses unknown attributes into the attrs array", () => {
+    const tem: ParsedTem = {};
+    parseTemAttributes("Arbitrary: Value", tem);
+    expect(tem.attrs!).toMatchInlineSnapshot(`
+      {
+        "Arbitrary": "Value",
+      }
+    `);
+  });
+});
+
+describe("parseTemTechnique", () => {
+  it("Returns false if a line isn't a technique", () => {
+    expect(parseTemTechnique("Not a move", [])).toEqual(false);
+  });
+
+  it("Recognises unicode characters in techniques", () => {
+    const techs: ParsedTemTechnique[] = [];
+    parseTemTechnique("- Quetza-leño", techs);
+    expect(techs[0]!.main).toEqual("Quetza-leño");
+  });
+
+  it("Parses alternative techique options", () => {
+    const techs: ParsedTemTechnique[] = [];
+    parseTemTechnique("- Tech One / Tech Two / Tech Three", techs);
+    expect(techs[0]!.alternatives!).toMatchInlineSnapshot(`
+      [
+        "Tech Two",
+        "Tech Three",
+      ]
+    `);
+
+    it("Parses no more than 4 techniques", () => {
+      const techs: ParsedTemTechnique[] = [
+        { main: "Technique One" },
+        { main: "Technique Two" },
+        { main: "Technique Three" },
+        { main: "Technique Four" },
+      ];
+
+      parseTemTechnique("- Technique Five", techs);
+      expect(techs).toEqual([
+        { main: "Technique One" },
+        { main: "Technique Two" },
+        { main: "Technique Three" },
+        { main: "Technique Four" },
+      ]);
+    });
   });
 });

@@ -1,5 +1,5 @@
 import { RE_HEAD, RE_TECH, RE_STAT } from "./regexps";
-import type { ParsedTem, ParsedTemStats } from "./types";
+import type { ParsedTem, ParsedTemStats, ParsedTemTechnique } from "./types";
 
 const MAX_TECHNIQUES = 4;
 
@@ -56,7 +56,7 @@ export function parseTem(set: string): ParsedTem | null {
     };
   }
 
-  const techniques: string[] = [];
+  const techniques: ParsedTemTechnique[] = [];
   const notes: string[] = [];
 
   // 2. Loop the the remaining lines to parse the other blocks
@@ -164,7 +164,7 @@ export function parseTemStats(str: string): ParsedTemStats | null {
   return stats;
 }
 
-function parseTemAttributes(line: string, tem: ParsedTem): boolean {
+export function parseTemAttributes(line: string, tem: ParsedTem): boolean {
   let attribute = line.split(": ");
 
   if (attribute.length !== 2) return false;
@@ -204,13 +204,29 @@ function parseTemAttributes(line: string, tem: ParsedTem): boolean {
   return true;
 }
 
-function parseTemTechnique(line: string, techniques: string[]): boolean {
+export function parseTemTechnique(
+  line: string,
+  techniques: ParsedTemTechnique[]
+): boolean {
   if (techniques.length >= MAX_TECHNIQUES) return false;
 
   const m = line.match(RE_TECH);
 
   if (m === null) return false;
 
-  techniques.push(sanitize(m[2]));
+  const techNames = sanitize(m[1])
+    .split(" / ")
+    .map((tstring) => tstring.trim());
+
+  const parsedTech: ParsedTemTechnique = {
+    main: techNames[0],
+  };
+
+  if (techNames.length > 1) {
+    techNames.shift();
+    parsedTech.alternatives = techNames;
+  }
+
+  techniques.push(parsedTech);
   return true;
 }
