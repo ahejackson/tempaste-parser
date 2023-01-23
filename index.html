@@ -52,10 +52,10 @@ TVs: 499 HP / 497 SPD / 3 DEF
 `;
 
     textarea.value = demoText;
-    output.innerText = JSON.stringify(parsePaste(textarea.value), null, 2);
+    output.textContent = JSON.stringify(parsePaste(textarea.value), null, 2);
 
     textarea.addEventListener("input", () => {
-      output.innerText = JSON.stringify(parsePaste(textarea.value), null, 2);
+      output.textContent = JSON.stringify(parsePaste(textarea.value), null, 2);
     });
 
 
