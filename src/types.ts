@@ -1,5 +1,5 @@
 export type ParsedTem = {
-  name?: string;
+  name: string;
   nickname?: string;
   gender?: "Male" | "Female" | "-";
   gear?: string;
@@ -11,6 +11,10 @@ export type ParsedTem = {
   attrs?: { [key: string]: string };
   techniques?: ParsedTemTechnique[];
   notes?: string[];
+};
+
+export type ParsedNotes = {
+  notes: string[];
 };
 
 export type ParsedTemTechnique = {

@@ -1,5 +1,10 @@
 import { RE_HEAD, RE_TECH, RE_STAT } from "./regexps";
-import type { ParsedTem, ParsedTemStats, ParsedTemTechnique } from "./types";
+import type {
+  ParsedTem,
+  ParsedNotes,
+  ParsedTemStats,
+  ParsedTemTechnique,
+} from "./types";
 
 const MAX_TECHNIQUES = 4;
 
@@ -12,34 +17,34 @@ const STATE = {
 
 type State = typeof STATE[keyof typeof STATE];
 
-// Parse a string into an array of Temtem sets
-export function parsePaste(paste: string): ParsedTem[] {
+// Parse a string into an array of Temtem sets or notes
+export function parsePaste(paste: string): (ParsedTem | ParsedNotes)[] {
   // Split the paste into different tems
   // Sperated by a double newline, allowing for windows/linux line terminators
-  let tems = paste.split(/(?:\r?\n){2,}/);
+  let items = paste.split(/(?:\r?\n){2,}/);
 
   // Parse all tems, ignoring any null tems
-  return tems.map((tem) => parseTem(tem)).filter(isNotNullParsedTem);
+  return items.map((item) => parseTem(item)).filter(isNotNull);
 }
 
-// Typescript typegate
-function isNotNullParsedTem(tem: ParsedTem | null): tem is ParsedTem {
+// Parse a string into Temtem sets only
+export function parsePasteTems(paste: string): ParsedTem[] {
+  return parsePaste(paste).filter(isParsedTem);
+}
+
+// Type gates
+function isParsedTem(item: ParsedTem | ParsedNotes): item is ParsedTem {
+  return (item as ParsedTem).name !== undefined;
+}
+
+function isNotNull(
+  tem: ParsedTem | ParsedNotes | null
+): tem is ParsedTem | ParsedNotes {
   return tem !== null;
 }
 
-// Simple string sanitising
-function sanitize(unsafe: string): string {
-  if (unsafe == null) return "";
-
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-// Parse a string into a Temtem set
-export function parseTem(set: string): ParsedTem | null {
+// Parse a string into a Temtem set or notes
+export function parseTem(set: string): ParsedTem | ParsedNotes | null {
   if (set.length === 0) return null;
 
   const lines = set.split(/\r?\n/);
@@ -52,7 +57,7 @@ export function parseTem(set: string): ParsedTem | null {
   // if the header was invalid, return these lines as a set of notes
   if (tem === null) {
     return {
-      notes: lines.map((line) => sanitize(line)),
+      notes: lines,
     };
   }
 
@@ -79,7 +84,7 @@ export function parseTem(set: string): ParsedTem | null {
 
     if (state == STATE.NOTES) {
       if (lines[i].length > 0) {
-        notes.push(sanitize(lines[i]));
+        notes.push(lines[i]);
       }
     }
   }
@@ -102,19 +107,21 @@ export function parseTemHeader(headerString: string): ParsedTem | null {
   // 1. Test the first line against the header Regex
   const m = headerString.match(RE_HEAD);
 
-  // 2. If there are no matches then do something...
+  // 2. If there are no matches then this is not a valid Temtem header
   if (m === null) {
     return null;
   }
 
-  const tem: ParsedTem = {};
+  const tem: ParsedTem = {
+    name: "",
+  };
 
   // 3. Check if this is a tem with a nickname
   if (m[1] !== undefined) {
-    tem.name = sanitize(m[2]);
-    tem.nickname = sanitize(m[1]);
+    tem.name = m[2];
+    tem.nickname = m[1];
   } else {
-    tem.name = sanitize(m[3]);
+    tem.name = m[3];
   }
 
   // 4. Check if the tem's gender is specified
@@ -126,7 +133,7 @@ export function parseTemHeader(headerString: string): ParsedTem | null {
 
   // 5. Check if the tem has gear equipped
   if (m[5] !== undefined) {
-    tem.gear = sanitize(m[5]);
+    tem.gear = m[5];
   }
 
   return tem;
@@ -174,7 +181,7 @@ export function parseTemAttributes(line: string, tem: ParsedTem): boolean {
 
   switch (key) {
     case "Trait":
-      tem.trait = sanitize(value);
+      tem.trait = value;
       break;
     case "Luma":
       tem.luma = value === "Yes";
@@ -199,7 +206,7 @@ export function parseTemAttributes(line: string, tem: ParsedTem): boolean {
       if (!tem.attrs) {
         tem.attrs = {};
       }
-      tem.attrs[key] = sanitize(value);
+      tem.attrs[key] = value;
   }
   return true;
 }
@@ -214,9 +221,7 @@ export function parseTemTechnique(
 
   if (m === null) return false;
 
-  const techNames = sanitize(m[1])
-    .split(" / ")
-    .map((tstring) => tstring.trim());
+  const techNames = m[1].split(" / ").map((tstring) => tstring.trim());
 
   const parsedTech: ParsedTemTechnique = {
     main: techNames[0],

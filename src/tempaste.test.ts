@@ -1,5 +1,6 @@
 import {
   parsePaste,
+  parsePasteTems,
   parseTem,
   parseTemAttributes,
   parseTemHeader,
@@ -14,6 +15,12 @@ describe("parsePaste", () => {
     expect(parsePaste("A\n\nB\n\nC").length).toEqual(
       parsePaste("A\r\n\r\nB\r\n\r\nC").length
     );
+  });
+});
+
+describe("parsePasteTems", () => {
+  it("Filters only ParsedTem sets", () => {
+    expect(parsePasteTems(`1. Note\n\nPigepic @ Fat Burner`).length).toEqual(1);
   });
 });
 
@@ -229,11 +236,11 @@ describe("parseTemStats", () => {
 
 describe("parseTemAttributes", () => {
   it("Returns false if there is no attribute", () => {
-    expect(parseTemAttributes("Not an attribute", {})).toEqual(false);
+    expect(parseTemAttributes("Not an attribute", { name: "" })).toEqual(false);
   });
 
   it("Parses unknown attributes into the attrs array", () => {
-    const tem: ParsedTem = {};
+    const tem: ParsedTem = { name: "" };
     parseTemAttributes("Arbitrary: Value", tem);
     expect(tem.attrs!).toMatchInlineSnapshot(`
       {
@@ -254,7 +261,7 @@ describe("parseTemTechnique", () => {
     expect(techs[0]!.main).toEqual("Quetza-leño");
   });
 
-  it("Parses alternative techique options", () => {
+  it("Parses alternative technique options", () => {
     const techs: ParsedTemTechnique[] = [];
     parseTemTechnique("- Tech One / Tech Two / Tech Three", techs);
     expect(techs[0]!.alternatives!).toMatchInlineSnapshot(`
