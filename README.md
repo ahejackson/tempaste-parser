@@ -18,7 +18,7 @@ TVs: 499 HP / 497 SPD / 3 DEF
 - Bamboozle
 - Divine Inspiration
 - Wind Burst
-- Stone Wall
+- Stone Wall / Chain Heal
 A standard Pigepic set.
 ```
 
@@ -26,7 +26,7 @@ A standard Pigepic set.
 
 ## Output
 
-The output of the set above would be:
+The parsed output of the set above is:
 
 ```
   {
@@ -50,7 +50,10 @@ The output of the set above would be:
         "main": "Wind Burst"
       },
       {
-        "main": "Stone Wall"
+        "main": "Stone Wall",
+        "alternatives": [
+          "Chain Heal",
+        ]
       }
     ],
     "notes": [
@@ -59,11 +62,29 @@ The output of the set above would be:
   }
 ```
 
-The parser emphasises reconstructability.
+The only required property for the output object is `name`. Every other property may or may not exist.
 
-But it might change the order.
+```
+Pigepic
 
-Enforces the order of header, attribute, technique and notes blocks.
+Momo
+```
+
+Would be parsed as two valid Temtem.
+
+Anything not parsed as a valid Temtem
+
+```
+  {
+    "notes": []
+  }
+```
+
+The standard attributes listed on the syntax page are parsed into corresponding properties of the tem object. Any unrecognised attribute is parsed into an `attrs` dictionary on the tem object.
+
+The parser emphasises reconstructability - by default it will not throw out input data and will instead interpret anything it doesn't recognise as 'notes' accompanying the Temtem sets.
+
+It does strictly enforces the order of header, attribute, technique and notes blocks for each Temtem set.
 
 # Usage
 
@@ -73,15 +94,21 @@ The goal of the parser is to make it easier to use Temtem teams written in text 
 npm install tempaste-parser
 ```
 
-Then in your code import:
+Depending on your use case, there are three functions of interest.
 
 ```
-import { parsePaste, parseTem } from 'tempaste-parser'
+import { parsePaste, parsePasteTems, parseTem } from 'tempaste-parser'
 ```
 
-These two functions both take a string.
+These three functions both take a string.
 
-`parsePaste` will parse a string into an arry of however many Temtem sets it finds. `parseTem` will parse a single Temtem set.
+`parseTem` will parse a single Temtem set. If the string isn't a valid Temtem set, it will return a `notes` object. If the string is empty it will return null.
+
+`parsePaste` will parse a string into an array of however many Temtem sets or notes objects it finds.
+
+`parsePasteTems` is the same as `parsePaste` but will ONLY return valid Temtem sets. For most use cases this is what you will want.
+
+To give you maximum flexibility, the parser has no built in limit on the lenght of the input string it will try and parse and does not do any sanitization of it's output. You should take precautions if you run it on unknown text sources.
 
 ## Local Demo
 
